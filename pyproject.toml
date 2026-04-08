@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "support-ops-env"
+version = "0.1.0"
+description = "Multi-step customer support triage and escalation benchmark for OpenEnv-style evaluation."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "openenv-core[core]>=0.2.2",
+  "pydantic>=2.7,<3",
+  "openai>=1.30.0",
+  "gradio>=4.44.0",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["support_ops_env*"]

@@ -1,0 +1,37 @@
+[
+  {
+    "task_id": "easy_account_takeover",
+    "difficulty": "easy",
+    "title": "Account Takeover Triage",
+    "description": "Route an urgent support ticket involving suspected account takeover and unauthorized ad spend.",
+    "instruction": "Review the ticket, request any missing high-value context, set priority, choose the correct route, select a resolution, and escalate only if warranted.",
+    "max_steps": 8,
+    "queue_mode": false,
+    "grader_name": "easy_support_routing",
+    "tickets": [
+      {
+        "ticket_id": "T1",
+        "summary": "Creator reports losing access to their account after repeated login attempts. They also noticed unfamiliar ad spend starting this morning.",
+        "visible_context": {
+          "customer_tier": "managed_creator",
+          "surface": "ads_manager",
+          "sla_hours_remaining": "2"
+        },
+        "hidden_context": {
+          "account_security": "Impossible travel and two failed password-reset attempts were flagged overnight.",
+          "billing_activity": "A new ad campaign spent $420 in the last 2 hours from a new IP block.",
+          "recovery_channel": "A verified backup email is on file and can receive a recovery code.",
+          "prior_cases": "No previous enforcement or abuse flags are on record."
+        },
+        "required_context": [
+          "account_security",
+          "billing_activity"
+        ],
+        "gold_priority": "urgent",
+        "gold_route": "account_security",
+        "gold_resolution": "temporary_lock_and_manual_recovery",
+        "gold_escalation_team": "security_specialist"
+      }
+    ]
+  }
+]

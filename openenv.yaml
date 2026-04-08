@@ -1,0 +1,22 @@
+name: support-ops-env
+description: Multi-step customer support triage and escalation benchmark for OpenEnv-style agents.
+version: 0.1.0
+tags:
+  - openenv
+  - customer-support
+  - triage
+  - evaluation
+entrypoint: support_ops_env.env:SupportOpsEnv
+observation_model: support_ops_env.models:Observation
+action_model: support_ops_env.models:Action
+reward_model: support_ops_env.models:RewardModel
+tasks:
+  - id: easy_account_takeover
+    difficulty: easy
+  - id: medium_payout_hold
+    difficulty: medium
+  - id: hard_queue_triage
+    difficulty: hard
+hf_space:
+  sdk: docker
+  suggested_app_file: app.py

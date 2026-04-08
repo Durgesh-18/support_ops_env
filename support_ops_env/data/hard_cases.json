@@ -1,0 +1,84 @@
+[
+  {
+    "task_id": "hard_queue_triage",
+    "difficulty": "hard",
+    "title": "Mixed Support Queue Triage",
+    "description": "Prioritize a small queue of heterogeneous support tickets under SLA pressure and route each one correctly.",
+    "instruction": "Inspect the queue, gather missing context where useful, assign the right priority and route for each ticket, set a valid resolution, rank the queue from most urgent to least urgent, and finalize.",
+    "max_steps": 16,
+    "queue_mode": true,
+    "gold_queue_order": [
+      "T2",
+      "T3",
+      "T1"
+    ],
+    "grader_name": "hard_support_queue",
+    "tickets": [
+      {
+        "ticket_id": "T1",
+        "summary": "Customer reports a duplicate charge on a subscription renewal and asks when the refund will land.",
+        "visible_context": {
+          "customer_tier": "consumer",
+          "surface": "subscriptions",
+          "sla_hours_remaining": "24"
+        },
+        "hidden_context": {
+          "payment_status": "The duplicate charge was confirmed and is automatically refundable.",
+          "refund_status": "No refund has been issued yet.",
+          "risk_flags": "No fraud indicators or account compromise signals are present."
+        },
+        "required_context": [
+          "payment_status"
+        ],
+        "gold_priority": "normal",
+        "gold_route": "billing_refunds",
+        "gold_resolution": "approve_refund",
+        "gold_escalation_team": null
+      },
+      {
+        "ticket_id": "T2",
+        "summary": "Advertiser cannot log in, says unfamiliar campaigns are spending rapidly, and fears the account was taken over.",
+        "visible_context": {
+          "customer_tier": "managed_advertiser",
+          "surface": "ads_manager",
+          "sla_hours_remaining": "1"
+        },
+        "hidden_context": {
+          "account_security": "Two new devices were added and recovery email was changed 30 minutes ago.",
+          "billing_activity": "Spending accelerated to $1,900 in the last hour.",
+          "risk_flags": "Account takeover risk score is critical."
+        },
+        "required_context": [
+          "account_security",
+          "billing_activity"
+        ],
+        "gold_priority": "urgent",
+        "gold_route": "account_security",
+        "gold_resolution": "temporary_lock_and_manual_recovery",
+        "gold_escalation_team": "security_specialist"
+      },
+      {
+        "ticket_id": "T3",
+        "summary": "Verified creator appeals a content moderation decision because a sponsored campaign launches tomorrow and monetization is paused.",
+        "visible_context": {
+          "customer_tier": "verified_creator",
+          "surface": "content_appeals",
+          "sla_hours_remaining": "4"
+        },
+        "hidden_context": {
+          "appeal_state": "The content was auto-removed for policy ambiguity and has not been reviewed by a human yet.",
+          "campaign_deadline": "The sponsored campaign begins in 18 hours.",
+          "account_history": "No previous policy strikes or abuse reports."
+        },
+        "required_context": [
+          "appeal_state",
+          "campaign_deadline"
+        ],
+        "gold_priority": "high",
+        "gold_route": "policy_appeals",
+        "gold_resolution": "expedited_human_review",
+        "gold_escalation_team": null
+      }
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "task_id": "medium_payout_hold",
+    "difficulty": "medium",
+    "title": "Monetization Payout Hold",
+    "description": "Handle a creator support issue where a monthly payout is missing and policy-compliance context is incomplete.",
+    "instruction": "Investigate the payout problem, request the most relevant missing context, decide the correct route, and choose a safe resolution without unnecessary escalation.",
+    "max_steps": 9,
+    "queue_mode": false,
+    "grader_name": "medium_support_resolution",
+    "tickets": [
+      {
+        "ticket_id": "T1",
+        "summary": "A small business creator says their monthly payout did not arrive. They mention changing bank details recently and want the funds released immediately.",
+        "visible_context": {
+          "customer_tier": "business_creator",
+          "surface": "creator_monetization",
+          "sla_hours_remaining": "12"
+        },
+        "hidden_context": {
+          "tax_status": "The W-9 expired last month and must be renewed before payout release.",
+          "payout_hold": "An automated compliance hold is active until tax renewal is confirmed.",
+          "bank_change": "The new bank account passed verification 3 days ago.",
+          "contract_status": "The creator remains in good standing with no strikes."
+        },
+        "required_context": [
+          "tax_status",
+          "payout_hold"
+        ],
+        "gold_priority": "high",
+        "gold_route": "monetization_compliance",
+        "gold_resolution": "request_tax_renewal",
+        "gold_escalation_team": null
+      }
+    ]
+  }
+]

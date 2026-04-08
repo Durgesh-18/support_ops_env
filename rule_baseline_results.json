@@ -1,0 +1,524 @@
+{
+  "baseline": "rule_based",
+  "average_score": 1.0,
+  "results": [
+    {
+      "task_id": "easy_account_takeover",
+      "difficulty": "easy",
+      "score": 1.0,
+      "steps": 7,
+      "transcript": [
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T1",
+            "value": "account_security"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.1,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T1",
+            "value": "billing_activity"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.2,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_priority",
+            "target": "T1",
+            "value": "urgent"
+          },
+          "reward": {
+            "value": 0.07,
+            "components": {
+              "step_penalty": -0.01,
+              "priority_match": 0.08
+            },
+            "rationale": "Processed set_priority."
+          },
+          "task_score": 0.4,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_route",
+            "target": "T1",
+            "value": "account_security"
+          },
+          "reward": {
+            "value": 0.09,
+            "components": {
+              "step_penalty": -0.01,
+              "route_match": 0.1
+            },
+            "rationale": "Processed set_route."
+          },
+          "task_score": 0.65,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_resolution",
+            "target": "T1",
+            "value": "temporary_lock_and_manual_recovery"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "resolution_match": 0.12
+            },
+            "rationale": "Processed set_resolution."
+          },
+          "task_score": 0.85,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "escalate",
+            "target": "T1",
+            "value": "security_specialist"
+          },
+          "reward": {
+            "value": 0.09,
+            "components": {
+              "step_penalty": -0.01,
+              "correct_escalation": 0.1
+            },
+            "rationale": "Processed escalate."
+          },
+          "task_score": 1.0,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "finalize",
+            "target": "T1",
+            "value": null
+          },
+          "reward": {
+            "value": 0.99,
+            "components": {
+              "step_penalty": -0.01,
+              "terminal_grade": 1.0
+            },
+            "rationale": "Final task grade applied."
+          },
+          "task_score": 1.0,
+          "done": true
+        }
+      ]
+    },
+    {
+      "task_id": "medium_payout_hold",
+      "difficulty": "medium",
+      "score": 1.0,
+      "steps": 6,
+      "transcript": [
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T1",
+            "value": "tax_status"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.225,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T1",
+            "value": "payout_hold"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.35,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_priority",
+            "target": "T1",
+            "value": "high"
+          },
+          "reward": {
+            "value": 0.07,
+            "components": {
+              "step_penalty": -0.01,
+              "priority_match": 0.08
+            },
+            "rationale": "Processed set_priority."
+          },
+          "task_score": 0.5,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_route",
+            "target": "T1",
+            "value": "monetization_compliance"
+          },
+          "reward": {
+            "value": 0.09,
+            "components": {
+              "step_penalty": -0.01,
+              "route_match": 0.1
+            },
+            "rationale": "Processed set_route."
+          },
+          "task_score": 0.75,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_resolution",
+            "target": "T1",
+            "value": "request_tax_renewal"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "resolution_match": 0.12
+            },
+            "rationale": "Processed set_resolution."
+          },
+          "task_score": 1.0,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "finalize",
+            "target": "T1",
+            "value": null
+          },
+          "reward": {
+            "value": 0.99,
+            "components": {
+              "step_penalty": -0.01,
+              "terminal_grade": 1.0
+            },
+            "rationale": "Final task grade applied."
+          },
+          "task_score": 1.0,
+          "done": true
+        }
+      ]
+    },
+    {
+      "task_id": "hard_queue_triage",
+      "difficulty": "hard",
+      "score": 1.0,
+      "steps": 16,
+      "transcript": [
+        {
+          "action": {
+            "action_type": "rank_queue",
+            "target": "T1",
+            "value": "T2,T3,T1"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "queue_progress": 0.12
+            },
+            "rationale": "Processed rank_queue."
+          },
+          "task_score": 0.2167,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T1",
+            "value": "payment_status"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.25,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T2",
+            "value": "account_security"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.2667,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T2",
+            "value": "billing_activity"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.2834,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T3",
+            "value": "appeal_state"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.3,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "request_context",
+            "target": "T3",
+            "value": "campaign_deadline"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "required_context_found": 0.12
+            },
+            "rationale": "Processed request_context."
+          },
+          "task_score": 0.3167,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_priority",
+            "target": "T1",
+            "value": "normal"
+          },
+          "reward": {
+            "value": 0.07,
+            "components": {
+              "step_penalty": -0.01,
+              "priority_match": 0.08
+            },
+            "rationale": "Processed set_priority."
+          },
+          "task_score": 0.3834,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_priority",
+            "target": "T2",
+            "value": "urgent"
+          },
+          "reward": {
+            "value": 0.07,
+            "components": {
+              "step_penalty": -0.01,
+              "priority_match": 0.08
+            },
+            "rationale": "Processed set_priority."
+          },
+          "task_score": 0.45,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_priority",
+            "target": "T3",
+            "value": "high"
+          },
+          "reward": {
+            "value": 0.07,
+            "components": {
+              "step_penalty": -0.01,
+              "priority_match": 0.08
+            },
+            "rationale": "Processed set_priority."
+          },
+          "task_score": 0.5167,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_route",
+            "target": "T1",
+            "value": "billing_refunds"
+          },
+          "reward": {
+            "value": 0.09,
+            "components": {
+              "step_penalty": -0.01,
+              "route_match": 0.1
+            },
+            "rationale": "Processed set_route."
+          },
+          "task_score": 0.6,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_route",
+            "target": "T2",
+            "value": "account_security"
+          },
+          "reward": {
+            "value": 0.09,
+            "components": {
+              "step_penalty": -0.01,
+              "route_match": 0.1
+            },
+            "rationale": "Processed set_route."
+          },
+          "task_score": 0.6834,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_route",
+            "target": "T3",
+            "value": "policy_appeals"
+          },
+          "reward": {
+            "value": 0.09,
+            "components": {
+              "step_penalty": -0.01,
+              "route_match": 0.1
+            },
+            "rationale": "Processed set_route."
+          },
+          "task_score": 0.7667,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_resolution",
+            "target": "T1",
+            "value": "approve_refund"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "resolution_match": 0.12
+            },
+            "rationale": "Processed set_resolution."
+          },
+          "task_score": 0.8334,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_resolution",
+            "target": "T2",
+            "value": "temporary_lock_and_manual_recovery"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "resolution_match": 0.12
+            },
+            "rationale": "Processed set_resolution."
+          },
+          "task_score": 0.9,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "set_resolution",
+            "target": "T3",
+            "value": "expedited_human_review"
+          },
+          "reward": {
+            "value": 0.11,
+            "components": {
+              "step_penalty": -0.01,
+              "resolution_match": 0.12
+            },
+            "rationale": "Processed set_resolution."
+          },
+          "task_score": 0.9667,
+          "done": false
+        },
+        {
+          "action": {
+            "action_type": "escalate",
+            "target": "T2",
+            "value": "security_specialist"
+          },
+          "reward": {
+            "value": 1.09,
+            "components": {
+              "step_penalty": -0.01,
+              "correct_escalation": 0.1,
+              "timeout_grade": 1.0
+            },
+            "rationale": "Processed escalate."
+          },
+          "task_score": 1.0,
+          "done": true
+        }
+      ]
+    }
+  ]
+}
