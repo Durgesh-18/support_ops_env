@@ -12,5 +12,9 @@ def main(host: str = "0.0.0.0", port: int | None = None) -> None:
     uvicorn.run(app, host=host, port=resolved_port)
 
 
+def uv_main():
+    return app
+
+
 if __name__ == "__main__":
     main()
