@@ -5,24 +5,27 @@ import os
 
 import gradio as gr
 
-from support_ops_env.env import SupportOpsEnv
+from server.app import app as api_app
 from support_ops_env.models import Action
 from support_ops_env.tasks import list_task_ids
 
 
-ENV = SupportOpsEnv()
-
-
 def reset_env(task_id: str) -> str:
-    observation = ENV.reset(task_id=task_id)
+    from server.app import _http_env
+
+    observation = _http_env.reset(task_id=task_id)
     return json.dumps(observation.model_dump(), indent=2)
 
 
 def step_env(task_id: str, action_type: str, target: str, value: str) -> tuple[str, str]:
-    if ENV.state().task_id != task_id or ENV.state().step_count == 0 and not ENV.state().done:
-        ENV.reset(task_id=task_id)
+    from server.app import _http_env
+
+    state = _http_env.state()
+    if state.task_id != task_id or (state.step_count == 0 and not state.done):
+        _http_env.reset(task_id=task_id)
+
     action = Action(action_type=action_type, target=target or "T1", value=value or None)
-    observation, reward, done, info = ENV.step(action)
+    observation, reward, done, info = _http_env.step(action)
     payload = {
         "reward": reward.model_dump(),
         "done": done,
@@ -66,6 +69,15 @@ with gr.Blocks(title="SupportOpsEnv") as demo:
     )
 
 
+app = gr.mount_gradio_app(api_app, demo, path="/ui")
+
+
+def main(host: str = "0.0.0.0", port: int | None = None) -> None:
+    import uvicorn
+
+    resolved_port = port or int(os.getenv("PORT", os.getenv("GRADIO_SERVER_PORT", "7860")))
+    uvicorn.run(app, host=host, port=resolved_port)
+
+
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", os.getenv("GRADIO_SERVER_PORT", "7860")))
-    demo.launch(server_name="0.0.0.0", server_port=port)
+    main()

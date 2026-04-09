@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from app import app as deployed_app
 from server.app import (
     StepRequest,
     app,
@@ -15,6 +16,15 @@ from server.app import (
 
 
 class ServerApiTest(unittest.TestCase):
+    def test_deployment_entrypoint_exposes_openenv_routes(self) -> None:
+        route_paths = {route.path for route in deployed_app.routes}
+        self.assertIn("/reset", route_paths)
+        self.assertIn("/step", route_paths)
+        self.assertIn("/state", route_paths)
+        self.assertIn("/health", route_paths)
+        self.assertIn("/metadata", route_paths)
+        self.assertIn("/schema", route_paths)
+
     def test_required_routes_are_registered(self) -> None:
         route_paths = {route.path for route in app.routes}
         self.assertIn("/health", route_paths)
