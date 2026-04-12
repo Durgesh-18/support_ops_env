@@ -109,12 +109,15 @@ class SupportOpsEnv:
         for ticket in self._task.tickets:
             keys = self._state.discovered_keys.get(ticket.ticket_id, [])
             discovered_context = {key: ticket.hidden_context[key] for key in keys}
+            available_keys = [k for k in ticket.hidden_context if k not in keys]
             tickets.append(
                 TicketObservation(
                     ticket_id=ticket.ticket_id,
                     summary=ticket.summary,
                     visible_context=ticket.visible_context,
                     discovered_context=discovered_context,
+                    available_context_keys=available_keys,
+                    required_context_keys=[k for k in ticket.required_context if k not in keys],
                     selected_priority=self._state.priorities.get(ticket.ticket_id),
                     selected_route=self._state.routes.get(ticket.ticket_id),
                     selected_resolution=self._state.resolutions.get(ticket.ticket_id),

@@ -34,6 +34,8 @@ class TicketObservation(BaseModel):
     summary: str
     visible_context: Dict[str, str]
     discovered_context: Dict[str, str] = Field(default_factory=dict)
+    available_context_keys: List[str] = Field(default_factory=list)
+    required_context_keys: List[str] = Field(default_factory=list)
     selected_priority: Optional[str] = None
     selected_route: Optional[str] = None
     selected_resolution: Optional[str] = None

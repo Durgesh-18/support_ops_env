@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import json
 import os
 import textwrap
@@ -8,15 +10,14 @@ from openai import OpenAI
 from support_ops_env.env import SupportOpsEnv
 from support_ops_env.models import Action, Observation
 from support_ops_env.tasks import list_task_ids
-from dotenv import load_dotenv
-load_dotenv()
+
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 TASK_NAME = os.getenv("SUPPORT_OPS_TASK", "easy_account_takeover")
 BENCHMARK = os.getenv("SUPPORT_OPS_BENCHMARK", "support_ops_env")
-MAX_STEPS = int(os.getenv("MAX_STEPS", "16"))
+MAX_STEPS = int(os.getenv("MAX_STEPS", "24"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.1"))
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "220"))
 SUCCESS_SCORE_THRESHOLD = float(os.getenv("SUCCESS_SCORE_THRESHOLD", "0.8"))
@@ -28,6 +29,7 @@ SYSTEM_PROMPT = textwrap.dedent(
     """
     You are operating a customer support triage environment.
     Return exactly one JSON object with keys: action_type, target, value.
+
     Allowed action_type values:
     - inspect_ticket
     - request_context
@@ -37,9 +39,49 @@ SYSTEM_PROMPT = textwrap.dedent(
     - escalate
     - rank_queue
     - finalize
-    Choose only valid ticket ids from the observation.
-    Use concise string values.
-    Finalize only after enough evidence is gathered.
+
+    VALID VALUES — you MUST use these exact strings:
+
+    priority values: urgent, high, normal, low
+    route values: account_security, monetization_compliance, billing_refunds, policy_appeals
+    resolution values: temporary_lock_and_manual_recovery, request_tax_renewal, approve_refund, expedited_human_review
+    escalation teams: security_specialist (only when account compromise is confirmed; omit otherwise)
+
+    ACTION FORMAT EXAMPLES — copy these exactly:
+    {"action_type": "inspect_ticket",   "target": "T1", "value": ""}
+    {"action_type": "request_context",  "target": "T1", "value": "tax_status"}
+    {"action_type": "set_priority",     "target": "T1", "value": "urgent"}
+    {"action_type": "set_route",        "target": "T1", "value": "account_security"}
+    {"action_type": "set_resolution",   "target": "T1", "value": "temporary_lock_and_manual_recovery"}
+    {"action_type": "escalate",         "target": "T1", "value": "security_specialist"}
+    {"action_type": "rank_queue",       "target": "T1", "value": "T2,T1,T3"}
+    {"action_type": "finalize",         "target": "T1", "value": ""}
+
+    CRITICAL: For request_context, target = ticket ID (e.g. "T1"), value = context key name.
+    NEVER put the context key name in target. target is ALWAYS a ticket ID.
+
+    WORKFLOW PER TICKET:
+    1. inspect_ticket once (target=ticket_id, value="").
+    2. request_context ONLY for keys in required_context_keys first (these affect your score).
+       Use target=ticket_id, value=key_name. Request each key at most once.
+       Do NOT request optional keys from available_context_keys — they give tiny reward
+       but waste steps you need for set_resolution, escalate, rank_queue, and finalize.
+    3. set_priority, set_route, set_resolution using the VALID VALUES listed above.
+       Use the context you discovered to choose correctly.
+    4. escalate only when account takeover / security compromise is confirmed.
+    5. For queue tasks: rank_queue after processing all tickets (most urgent first).
+    6. finalize (target=ticket_id, value="") when all tickets are done.
+
+    PRIORITY HINTS:
+    - Account takeover / fraud / SLA <= 2h → urgent
+    - Tax/compliance holds, payment issues / SLA <= 12h → high
+    - Routine appeals, refunds / SLA >= 24h → normal
+
+    STRICT RULES:
+    - NEVER repeat an action you have already taken (check your history).
+    - inspect_ticket AT MOST ONCE per ticket.
+    - target is ALWAYS a ticket ID like "T1". NEVER put a context key in target.
+    - Each request_context must use a different value (key name).
     """
 ).strip()
 
@@ -65,23 +107,28 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     )
 
 
-def build_user_prompt(observation: Observation, step: int, rewards: List[float]) -> str:
+def build_user_prompt(observation: Observation, step: int, rewards: List[float], action_history: List[str]) -> str:
     reward_history = ",".join(f"{reward:.2f}" for reward in rewards[-5:]) if rewards else "none"
+    history_str = "\n".join(f"  {a}" for a in action_history) if action_history else "  none"
     return textwrap.dedent(
         f"""
         Step: {step}
         Task: {observation.task_id}
         Difficulty: {observation.difficulty}
         Reward history: {reward_history}
+
+        Actions you have ALREADY taken this episode (do NOT repeat these):
+{history_str}
+
         Observation JSON:
         {json.dumps(observation.model_dump(), indent=2, sort_keys=True)}
-        Return one JSON action.
+        Return one JSON action that you have NOT already taken.
         """
     ).strip()
 
 
-def get_model_action(client: OpenAI, observation: Observation, step: int, rewards: List[float]) -> tuple[Action, Optional[str]]:
-    user_prompt = build_user_prompt(observation, step, rewards)
+def get_model_action(client: OpenAI, observation: Observation, step: int, rewards: List[float], action_history: List[str]) -> tuple[Action, Optional[str]]:
+    user_prompt = build_user_prompt(observation, step, rewards, action_history)
     try:
         completion = client.chat.completions.create(
             model=MODEL_NAME,
@@ -130,6 +177,7 @@ def run_task(client: OpenAI, task_name: str) -> dict:
     """Run a single task and return a result dict."""
     env = SupportOpsEnv(task_id=task_name)
     rewards: List[float] = []
+    action_history: List[str] = []
     steps_taken = 0
     score = 0.0
     success = False
@@ -140,8 +188,9 @@ def run_task(client: OpenAI, task_name: str) -> dict:
         observation = env.reset(task_id=task_name)
 
         for step in range(1, MAX_STEPS + 1):
-            action, action_error = get_model_action(client, observation, step, rewards)
+            action, action_error = get_model_action(client, observation, step, rewards, action_history)
             action_str = json.dumps(action.model_dump(), separators=(",", ":"))
+            action_history.append(action_str)
 
             observation, reward, done, info = env.step(action)
             reward_value = reward.value
@@ -173,7 +222,9 @@ def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
     # Fix 2: run at least MIN_TASKS tasks so the grader has enough scored entries
-    tasks = select_tasks(TASK_NAME)
+    # Run in reverse difficulty order (hard first) so expensive tasks get credits
+    # while the budget is fresh, rather than always dying on the last task.
+    tasks = list(reversed(select_tasks(TASK_NAME)))
 
     all_results = []
     for task_name in tasks:

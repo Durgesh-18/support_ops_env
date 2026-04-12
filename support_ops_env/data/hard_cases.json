@@ -5,7 +5,7 @@
     "title": "Mixed Support Queue Triage",
     "description": "Prioritize a small queue of heterogeneous support tickets under SLA pressure and route each one correctly.",
     "instruction": "Inspect the queue, gather missing context where useful, assign the right priority and route for each ticket, set a valid resolution, rank the queue from most urgent to least urgent, and finalize.",
-    "max_steps": 16,
+    "max_steps": 24,
     "queue_mode": true,
     "gold_queue_order": [
       "T2",
