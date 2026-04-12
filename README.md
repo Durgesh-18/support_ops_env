@@ -8,6 +8,7 @@ tags:
   - evaluation
 ---
 
+
 # SupportOpsEnv
 
 SupportOpsEnv is a multi-step environment for evaluating agents on realistic customer support operations. The agent behaves like a support analyst: it reviews ticket summaries, requests missing context, assigns priority, chooses the correct internal route, selects a resolution, escalates when needed, and finalizes the case. This models a genuine workflow used by support operations, trust and safety, monetization, and account-recovery teams.
