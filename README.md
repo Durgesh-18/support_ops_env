@@ -20,7 +20,7 @@ The environment is designed to score well against OpenEnv-style hackathon criter
 - Typed observation, action, and reward models
 - Reproducible OpenAI baseline runner
 - Reproducible rule-based baseline runner that works with no API key
-- Dockerized deployment path for Hugging Face Spaces
+- Dockerized deployment on Hugging Face Spaces
 
 ## Environment Motivation
 
@@ -67,40 +67,40 @@ Each ticket observation contains:
 
 Supported `action_type` values:
 
-- `inspect_ticket`
-- `request_context`
-- `set_priority`
-- `set_route`
-- `set_resolution`
-- `escalate`
-- `rank_queue`
-- `finalize`
+| `action_type`    | `target`   | `value` example                        |
+|------------------|------------|----------------------------------------|
+| `inspect_ticket` | ticket ID  | `""`                                   |
+| `request_context`| ticket ID  | `"tax_status"`                         |
+| `set_priority`   | ticket ID  | `"urgent"` / `"high"` / `"normal"` / `"low"` |
+| `set_route`      | ticket ID  | `"account_security"` / `"billing_refunds"` / `"monetization_compliance"` / `"policy_appeals"` |
+| `set_resolution` | ticket ID  | `"temporary_lock_and_manual_recovery"` / `"request_tax_renewal"` / `"approve_refund"` / `"expedited_human_review"` |
+| `escalate`       | ticket ID  | `"security_specialist"`                |
+| `rank_queue`     | `"queue"`  | `"T2,T1,T3"`                           |
+| `finalize`       | ticket ID  | `""`                                   |
 
 ## Reward Design
 
 `RewardModel` is a Pydantic model with:
 
-- `value`
-- `components`
-- `rationale`
+- `value`: scalar reward for this step
+- `components`: dict of named sub-rewards
+- `rationale`: human-readable explanation
 
 Reward shaping is dense, not sparse:
 
-- positive reward for discovering required context
-- positive reward for correct intermediate decisions
+- positive reward for discovering required context keys
+- positive reward for correct intermediate decisions (priority, route, resolution)
 - positive reward for correct queue ranking progress
 - terminal reward from the deterministic grader score
 - penalties for invalid actions, redundant actions, and wasted steps
 
-This creates learning or evaluation signal over the full trajectory.
+This creates a learning or evaluation signal over the full trajectory, not just at episode end.
 
 ## Tasks
 
 ### Easy: Account Takeover Triage
 
 Objective: correctly handle an urgent suspected account takeover with unauthorized ad spend.
-
-Expected difficulty: easy.
 
 Success criteria:
 
@@ -114,8 +114,6 @@ Success criteria:
 
 Objective: investigate a missing creator payout and avoid unsafe release of funds.
 
-Expected difficulty: medium.
-
 Success criteria:
 
 - discover tax-expiry and compliance-hold context
@@ -126,26 +124,50 @@ Success criteria:
 
 ### Hard: Mixed Support Queue Triage
 
-Objective: prioritize and resolve a heterogeneous queue under SLA pressure.
-
-Expected difficulty: hard.
+Objective: prioritize and resolve a heterogeneous queue of three tickets under SLA pressure.
 
 Success criteria:
 
-- correctly rank the queue
-- assign route and priority for each ticket
-- choose correct resolutions
+- correctly rank the queue by urgency
+- assign route and priority for each ticket independently
+- choose correct resolutions per ticket
 - escalate only the security-critical case
 
 ## Graders
 
-Each task has a deterministic grader that returns a score in `0.0` to `1.0`.
+Each task has a deterministic grader that returns a score in `[0.0, 1.0]`.
 
-- Easy grader weights context, priority, route, resolution, and escalation
+- Easy grader weights context discovery, priority, route, resolution, and escalation
 - Medium grader weights context and policy-safe resolution more heavily
-- Hard grader scores per-ticket handling and queue ranking
+- Hard grader scores per-ticket handling and queue ranking independently
 
-Programmatic graders live in [support_ops_env/graders](/home/batman/Downloads/presentation_template/support_ops_env/support_ops_env/graders).
+Programmatic graders live in [`support_ops_env/graders/`](./support_ops_env/graders/).
+
+## Baseline Scores
+
+### Rule-based baseline (no API key required)
+
+The deterministic rule-based baseline always takes the optimal action sequence and is used as a sanity check that the graders are correct and reachable:
+
+| Task                    | Score |
+|-------------------------|-------|
+| `easy_account_takeover` | 1.000 |
+| `medium_payout_hold`    | 1.000 |
+| `hard_queue_triage`     | 1.000 |
+| **average**             | **1.000** |
+
+### LLM baseline (GPT-4.1-mini)
+
+These are the reproducible scores from the OpenAI baseline runner. They demonstrate that the environment provides a genuine challenge to frontier models, particularly on the hard task:
+
+| Task                    | Score | Notes |
+|-------------------------|-------|-------|
+| `easy_account_takeover` | ~0.20 | Model skips mandatory set_priority / set_route / set_resolution before finalize |
+| `medium_payout_hold`    | ~0.35 | Correct context discovery but premature finalize |
+| `hard_queue_triage`     | ~0.13 | Multi-ticket ranking and per-ticket mandatory actions not completed |
+| **average**             | **~0.23** | |
+
+The gap between the rule baseline and the LLM baseline confirms the reward function produces genuine signal and the hard task challenges frontier models.
 
 ## Setup
 
@@ -176,55 +198,59 @@ Run the default no-API baseline:
 python scripts/run_rule_baseline.py
 ```
 
-Run the OpenAI baseline if you have an API key:
+Run the OpenAI baseline:
 
 ```bash
 export OPENAI_API_KEY=your_key_here
 python scripts/run_baseline.py --model gpt-4.1-mini
 ```
 
-Validate metadata:
+Validate OpenEnv metadata:
 
 ```bash
 bash scripts/validate_env.sh
+# If the openenv CLI is installed, this also runs: openenv validate openenv.yaml
 ```
 
-If the `openenv` CLI is installed, the script will also run `openenv validate openenv.yaml`.
+## API Quick Start
 
-## Baseline Scores
+The live environment is available at `https://suppops-supportopsenv.hf.space`.
 
-The repository now includes a deterministic baseline in [run_rule_baseline.py](/home/batman/Downloads/presentation_template/support_ops_env/scripts/run_rule_baseline.py), so you can produce reproducible scores without any external API.
-
-In this workspace, use:
+Reset to a task:
 
 ```bash
-python scripts/run_rule_baseline.py
+curl -X POST https://suppops-supportopsenv.hf.space/reset \
+  -H "Content-Type: application/json" \
+  -d '{"task_id": "easy_account_takeover"}'
 ```
 
-This writes `rule_baseline_results.json` with per-task transcripts and the average score.
+Take a step:
 
-The current deterministic baseline score from this workspace is:
+```bash
+curl -X POST https://suppops-supportopsenv.hf.space/step \
+  -H "Content-Type: application/json" \
+  -d '{"action": {"action_type": "inspect_ticket", "target": "T1", "value": ""}}'
+```
 
-- `easy_account_takeover`: `1.0`
-- `medium_payout_hold`: `1.0`
-- `hard_queue_triage`: `1.0`
-- average: `1.0`
+Inspect the full environment state:
 
-The OpenAI baseline in [run_baseline.py](/home/batman/Downloads/presentation_template/support_ops_env/scripts/run_baseline.py) is still available as an optional comparison path after installing dependencies and setting `OPENAI_API_KEY`.
+```bash
+curl https://suppops-supportopsenv.hf.space/state
+```
+
+Get JSON schemas for all models:
+
+```bash
+curl https://suppops-supportopsenv.hf.space/schema
+```
 
 ## Hugging Face Space Deployment
 
-This repository includes:
-
-- `Dockerfile`
-- `app.py`
-- `openenv.yaml`
-
-To deploy as a Docker Space:
+This repository includes a `Dockerfile`, `app.py`, and `openenv.yaml` and deploys as a Docker Space.
 
 1. Create a new Hugging Face Space with SDK set to Docker.
-2. Upload this repository.
-3. Add the `openenv` tag in the Space metadata.
+2. Push this repository to the Space.
+3. Add the `openenv` tag in the Space metadata (already present in this README's frontmatter).
 4. Optionally set `OPENAI_API_KEY` as a Space secret for baseline experiments.
 
 ## Project Structure
@@ -240,6 +266,9 @@ support_ops_env/
 │   ├── graders/
 │   └── tasks/
 ├── scripts/
+│   ├── run_baseline.py
+│   ├── run_rule_baseline.py
+│   └── validate_env.sh
 ├── tests/
 ├── app.py
 ├── openenv.yaml
