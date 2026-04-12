@@ -7,8 +7,8 @@ from ..models import StateModel, TaskGrade, TaskSpec, TicketSpec
 # Scores must be strictly within (0, 1) — the submission grader rejects
 # exact 0.0 and 1.0.  Because all non-context components are binary,
 # a perfect or zero run would otherwise produce exactly 0.0 or 1.0.
-_SCORE_MIN = 1e-6
-_SCORE_MAX = 1.0 - 1e-6
+_SCORE_MIN = 0.001
+_SCORE_MAX = 0.999
 
 
 def _clamp(score: float) -> float:

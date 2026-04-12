@@ -8,7 +8,8 @@ from openai import OpenAI
 from support_ops_env.env import SupportOpsEnv
 from support_ops_env.models import Action, Observation
 from support_ops_env.tasks import list_task_ids
-
+from dotenv import load_dotenv
+load_dotenv()
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -102,9 +103,11 @@ def get_model_action(client: OpenAI, observation: Observation, step: int, reward
 
 
 def clamp_score(score: float) -> float:
-    """Clamp score to strictly open interval (0, 1) as required by the grader."""
-    _EPSILON = 1e-6
-    return min(max(float(score), _EPSILON), 1.0 - _EPSILON)
+    """Clamp score to strictly open interval (0, 1).
+    Uses 0.001/0.999 so the value survives :.3f log formatting —
+    the submission parser reads that string, so 1e-6 would round
+    to '0.000' and be rejected as exactly 0.0."""
+    return min(max(float(score), 0.001), 0.999)
 
 
 def select_tasks(requested: str) -> List[str]:
