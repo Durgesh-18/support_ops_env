@@ -4,6 +4,16 @@ from typing import Dict, List
 
 from ..models import StateModel, TaskGrade, TaskSpec, TicketSpec
 
+# Scores must be strictly within (0, 1) — the submission grader rejects
+# exact 0.0 and 1.0.  Because all non-context components are binary,
+# a perfect or zero run would otherwise produce exactly 0.0 or 1.0.
+_SCORE_MIN = 1e-6
+_SCORE_MAX = 1.0 - 1e-6
+
+
+def _clamp(score: float) -> float:
+    return min(max(score, _SCORE_MIN), _SCORE_MAX)
+
 
 def _ticket_component(
     ticket: TicketSpec,
@@ -36,7 +46,7 @@ def grade_single_ticket(
 ) -> TaskGrade:
     ticket = task.tickets[0]
     weighted = _ticket_component(ticket, state, weights)
-    score = round(sum(weighted.values()), 4)
+    score = _clamp(round(sum(weighted.values()), 4))
     notes = _notes_for_ticket(ticket, state)
     return TaskGrade(
         task_id=task.task_id,
@@ -79,7 +89,7 @@ def grade_queue_task(
         ranking_score = round((matches / len(task.gold_queue_order)) * weights.get("ranking", 0.0), 4)
 
     averaged["ranking"] = ranking_score
-    score = round(sum(averaged.values()), 4)
+    score = _clamp(round(sum(averaged.values()), 4))
     return TaskGrade(
         task_id=task.task_id,
         score=score,

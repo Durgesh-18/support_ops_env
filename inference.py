@@ -20,6 +20,8 @@ TEMPERATURE = float(os.getenv("TEMPERATURE", "0.1"))
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "220"))
 SUCCESS_SCORE_THRESHOLD = float(os.getenv("SUCCESS_SCORE_THRESHOLD", "0.8"))
 
+# Minimum number of tasks required by the grader
+MIN_TASKS = 3
 
 SYSTEM_PROMPT = textwrap.dedent(
     """
@@ -99,17 +101,31 @@ def get_model_action(client: OpenAI, observation: Observation, step: int, reward
         return fallback, str(exc).replace("\n", " ")
 
 
-def ensure_known_task(task_name: str) -> str:
-    if task_name in list_task_ids():
-        return task_name
-    return list_task_ids()[0]
+def clamp_score(score: float) -> float:
+    """Clamp score to strictly open interval (0, 1) as required by the grader."""
+    _EPSILON = 1e-6
+    return min(max(float(score), _EPSILON), 1.0 - _EPSILON)
 
 
-def main() -> None:
-    task_name = ensure_known_task(TASK_NAME)
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+def select_tasks(requested: str) -> List[str]:
+    """
+    Return at least MIN_TASKS task IDs.
+    Always includes the requested task; pads with other available tasks if needed.
+    """
+    available = list_task_ids()
+    if not available:
+        raise RuntimeError("No tasks available in the environment.")
+
+    # Start with the requested task (validated), then fill up to MIN_TASKS
+    primary = requested if requested in available else available[0]
+    others = [t for t in available if t != primary]
+    task_list = [primary] + others
+    return task_list[:max(MIN_TASKS, 1)]
+
+
+def run_task(client: OpenAI, task_name: str) -> dict:
+    """Run a single task and return a result dict."""
     env = SupportOpsEnv(task_id=task_name)
-
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
@@ -141,10 +157,34 @@ def main() -> None:
             if done:
                 break
 
-        score = min(max(score, 0.0), 1.0)
+        # Fix 1: clamp to strictly open (0, 1) — grader rejects 0.0 and 1.0
+        score = clamp_score(score)
         success = score >= SUCCESS_SCORE_THRESHOLD
     finally:
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+
+    return {"task": task_name, "success": success, "steps": steps_taken, "score": score}
+
+
+def main() -> None:
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+
+    # Fix 2: run at least MIN_TASKS tasks so the grader has enough scored entries
+    tasks = select_tasks(TASK_NAME)
+
+    all_results = []
+    for task_name in tasks:
+        result = run_task(client, task_name)
+        all_results.append(result)
+
+    # Summary across all tasks
+    total = len(all_results)
+    passed = sum(1 for r in all_results if r["success"])
+    avg_score = sum(r["score"] for r in all_results) / total if total else 0.0
+    print(
+        f"[SUMMARY] tasks={total} passed={passed} avg_score={avg_score:.3f}",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
