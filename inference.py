@@ -9,7 +9,6 @@ from support_ops_env.env import SupportOpsEnv
 from support_ops_env.models import Action, Observation
 from support_ops_env.tasks import list_task_ids
 
-
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
